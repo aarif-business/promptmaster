@@ -1,7 +1,14 @@
+import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import DashboardClient from './DashboardClient'
 import { unstable_noStore as noStore } from 'next/cache'
+
+export const metadata: Metadata = {
+  title: 'Dashboard — Your Progress',
+  description: 'Track your prompt engineering progress, medals, XP, and submission history on PromptMaster.',
+  robots: { index: false, follow: false },
+}
 
 export default async function DashboardPage() {
   noStore()

@@ -42,9 +42,27 @@ export const metadata: Metadata = {
   alternates: { canonical: BASE_URL },
 }
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: 'PromptMaster',
+  url: BASE_URL,
+  description: 'Gamified prompt engineering training. Describe images with AI precision, earn XP, unlock realms, and become a Grand Master.',
+  applicationCategory: 'EducationalApplication',
+  operatingSystem: 'Web',
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  author: { '@type': 'Organization', name: 'PromptMaster' },
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className="min-h-screen flex flex-col bg-fog text-slate-dark">
         <Header />
         <main className="flex-1">{children}</main>

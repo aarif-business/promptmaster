@@ -1,7 +1,19 @@
+import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { unstable_noStore as noStore } from 'next/cache'
 import Link from 'next/link'
+
+export const metadata: Metadata = {
+  title: 'Quests — Choose Your Challenge',
+  description: 'Browse all prompt engineering challenges across Beginner, Intermediate, and Advanced realms. Earn medals and ascend to Grand Master.',
+  alternates: { canonical: 'https://promptmaster.vercel.app/challenges' },
+  openGraph: {
+    title: 'PromptMaster Quests — Choose Your Challenge',
+    description: 'Browse all prompt engineering challenges. Earn medals and ascend to Grand Master.',
+    url: 'https://promptmaster.vercel.app/challenges',
+  },
+}
 
 const STAGE_META: Record<string, { icon: string; medal: string; color: string; bg: string; terrain: string }> = {
   beginner:     { icon: '🗺️', medal: '🥉', color: 'text-amber-600',  bg: 'from-amber-50 to-fog-muted',    terrain: 'The Misty Meadows'   },

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound, redirect } from 'next/navigation'
@@ -6,6 +7,20 @@ import { getNextChallengeImage } from '@/app/actions'
 import { unstable_noStore as noStore } from 'next/cache'
 
 const DIFFICULTY_ORDER = ['beginner', 'intermediate', 'advanced']
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params
+  const admin = createAdminClient()
+  const { data: challenge } = await admin.from('challenges').select('description, difficulty').eq('id', id).single()
+  const { data: sameDiff } = await admin.from('challenges').select('id').eq('difficulty', challenge?.difficulty ?? '').order('created_at')
+  const idx = (sameDiff ?? []).findIndex(c => c.id === id)
+  const title = `Challenge ${idx + 1} — ${challenge?.difficulty ?? ''} Realm`
+  return {
+    title,
+    description: challenge?.description ?? 'A prompt engineering challenge on PromptMaster.',
+    robots: { index: false, follow: false },
+  }
+}
 
 export default async function ChallengePage({ params }: { params: Promise<{ id: string }> }) {
   noStore()
