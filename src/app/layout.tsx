@@ -50,6 +50,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="flex-1">{children}</main>
         <footer className="border-t border-fog-border py-4 text-center text-xs font-sans text-slate/50 tracking-widest uppercase">
           PromptMaster Class &mdash; The Art of the Prompt
+          <span className="mx-2 text-slate/30">·</span>
+          Developed by{' '}
+          <a
+            href="https://lowkeywebdev.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-steel hover:text-steel-dark transition-colors normal-case"
+          >
+            Low Key Web Dev
+          </a>
         </footer>
       </body>
     </html>
