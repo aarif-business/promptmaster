@@ -42,12 +42,17 @@ export default async function AdminPage() {
 
     const passedByDiff: Record<string, boolean> = {}
     for (const diff of DIFFICULTY_ORDER) {
-      passedByDiff[diff] = (challenges ?? []).filter(c => c.difficulty === diff).some(c => bestByChallenge[c.id]?.passed)
+      const diffChallenges = (challenges ?? []).filter(c => c.difficulty === diff)
+      passedByDiff[diff] = diffChallenges.length > 0 && diffChallenges.every(c => bestByChallenge[c.id]?.passed)
     }
 
+    // Current level = first difficulty where not all challenges are passed
     let currentLevel = 'beginner'
-    if (passedByDiff['intermediate']) currentLevel = 'advanced'
-    else if (passedByDiff['beginner']) currentLevel = 'intermediate'
+    for (const diff of DIFFICULTY_ORDER) {
+      if (!passedByDiff[diff]) { currentLevel = diff; break }
+    }
+    // If all levels complete, stay on advanced
+    if (DIFFICULTY_ORDER.every(d => passedByDiff[d])) currentLevel = 'advanced'
 
     const levelChallenges = (challenges ?? []).filter(c => c.difficulty === currentLevel)
     const currentChallengeIdx = levelChallenges.findIndex(c => !bestByChallenge[c.id]?.passed)
