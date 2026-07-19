@@ -6,11 +6,12 @@ import AdminClient from './AdminClient'
 export default async function AdminPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user!.id).single()
-  if (profile?.role !== 'admin') redirect('/dashboard')
-
+  // Use service role to bypass RLS for role check
   const admin = createAdminClient()
+  const { data: selfProfile } = await admin.from('profiles').select('role').eq('id', user.id).single()
+  if (selfProfile?.role !== 'admin') redirect('/dashboard')
 
   const [
     { data: profiles },
@@ -20,7 +21,7 @@ export default async function AdminPage() {
     { data: scoreRows },
     { data: imageCounts },
   ] = await Promise.all([
-    admin.from('profiles').select('id, full_name, role, created_at').order('role').order('created_at', { ascending: false }),
+    admin.from('profiles').select('id, full_name, email, role, created_at').order('role').order('created_at', { ascending: false }),
     admin.from('challenges').select('id, title, difficulty, created_at').order('difficulty').order('created_at'),
     admin.from('submissions').select('user_id, challenge_id, accuracy_score, passed'),
     admin.from('submissions').select('*', { count: 'exact', head: true }),
@@ -28,14 +29,8 @@ export default async function AdminPage() {
     admin.from('challenge_images').select('challenge_id'),
   ])
 
-  // Get emails from auth.users via admin API
-  const { data: { users: authUsers } } = await admin.auth.admin.listUsers()
-  const emailMap: Record<string, string> = {}
-  for (const u of authUsers ?? []) emailMap[u.id] = u.email ?? ''
-
   const DIFFICULTY_ORDER = ['beginner', 'intermediate', 'advanced']
 
-  // Build per-user progress
   const users = (profiles ?? []).map(p => {
     const subs = (allSubmissions ?? []).filter(s => s.user_id === p.id)
     const bestByChallenge: Record<string, { passed: boolean; accuracy_score: number }> = {}
@@ -50,17 +45,14 @@ export default async function AdminPage() {
       passedByDiff[diff] = (challenges ?? []).filter(c => c.difficulty === diff).some(c => bestByChallenge[c.id]?.passed)
     }
 
-    // Current level = highest unlocked difficulty
     let currentLevel = 'beginner'
     if (passedByDiff['intermediate']) currentLevel = 'advanced'
     else if (passedByDiff['beginner']) currentLevel = 'intermediate'
 
-    // Current challenge = first unpassed challenge in current level
     const levelChallenges = (challenges ?? []).filter(c => c.difficulty === currentLevel)
     const currentChallengeIdx = levelChallenges.findIndex(c => !bestByChallenge[c.id]?.passed)
     const currentChallengeNum = currentChallengeIdx === -1 ? levelChallenges.length : currentChallengeIdx + 1
 
-    // Overall completion %
     const totalChallenges = (challenges ?? []).length
     const passedCount = Object.values(bestByChallenge).filter(b => b.passed).length
     const completionPct = totalChallenges > 0 ? Math.round((passedCount / totalChallenges) * 100) : 0
@@ -68,7 +60,7 @@ export default async function AdminPage() {
     return {
       id: p.id,
       name: p.full_name || '—',
-      email: emailMap[p.id] || '—',
+      email: p.email || '—',
       role: p.role ?? 'user',
       level: currentLevel,
       currentChallengeNum,
@@ -84,7 +76,6 @@ export default async function AdminPage() {
 
   const countMap: Record<string, number> = {}
   for (const row of imageCounts ?? []) countMap[row.challenge_id] = (countMap[row.challenge_id] ?? 0) + 1
-
   const challengesWithCounts = (challenges ?? []).map(c => ({ ...c, image_count: countMap[c.id] ?? 0 }))
 
   return (
@@ -92,7 +83,7 @@ export default async function AdminPage() {
       stats={{ totalUsers: (profiles ?? []).length, totalSubmissions: totalSubmissions ?? 0, avgAccuracy }}
       users={users}
       challenges={challengesWithCounts}
-      adminId={user!.id}
+      adminId={user.id}
     />
   )
 }
