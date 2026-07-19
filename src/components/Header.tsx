@@ -94,6 +94,7 @@ export default function Header() {
                   <button onClick={handleSignOut} className="font-sans text-sm text-slate/50 hover:text-steel transition-colors">Sign Out</button>
                 </>
               )}
+            </>
           ) : (
             <>
               <Link href="/login" className="font-sans text-sm text-slate/70 hover:text-steel transition-colors">
