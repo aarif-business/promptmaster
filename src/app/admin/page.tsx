@@ -20,7 +20,7 @@ export default async function AdminPage() {
     { data: scoreRows },
     { data: imageCounts },
   ] = await Promise.all([
-    admin.from('profiles').select('id, full_name, created_at').order('created_at', { ascending: false }),
+    admin.from('profiles').select('id, full_name, role, created_at').order('role').order('created_at', { ascending: false }),
     admin.from('challenges').select('id, title, difficulty, created_at').order('difficulty').order('created_at'),
     admin.from('submissions').select('user_id, challenge_id, accuracy_score, passed'),
     admin.from('submissions').select('*', { count: 'exact', head: true }),
@@ -69,6 +69,7 @@ export default async function AdminPage() {
       id: p.id,
       name: p.full_name || '—',
       email: emailMap[p.id] || '—',
+      role: p.role ?? 'user',
       level: currentLevel,
       currentChallengeNum,
       totalInLevel: levelChallenges.length,

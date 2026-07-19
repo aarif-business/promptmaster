@@ -8,6 +8,7 @@ interface UserRow {
   id: string
   name: string
   email: string
+  role: string
   level: string
   currentChallengeNum: number
   totalInLevel: number
@@ -126,7 +127,7 @@ export default function AdminClient({ stats, users, challenges, adminId }: {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-fog-border bg-fog-muted">
-                {['Name', 'Email', 'Level', 'Current Challenge', 'Completion %', 'Joined'].map(h => (
+                {['Name', 'Email', 'Role', 'Level', 'Current Challenge', 'Completion %', 'Joined'].map(h => (
                   <th key={h} className="font-sans text-xs tracking-widest uppercase text-slate/50 text-left px-4 py-3">{h}</th>
                 ))}
               </tr>
@@ -139,6 +140,11 @@ export default function AdminClient({ stats, users, challenges, adminId }: {
                 <tr key={u.id} className="hover:bg-fog-muted/50 transition-colors">
                   <td className="px-4 py-3 font-serif text-steel font-semibold whitespace-nowrap">{u.name}</td>
                   <td className="px-4 py-3 font-sans text-xs text-slate/60 whitespace-nowrap">{u.email}</td>
+                  <td className="px-4 py-3">
+                    <span className={`font-sans text-xs px-2.5 py-1 border rounded-full capitalize ${
+                      u.role === 'admin' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-fog-muted text-slate/50 border-fog-border'
+                    }`}>{u.role}</span>
+                  </td>
                   <td className="px-4 py-3">
                     <span className={`font-sans text-xs px-2.5 py-1 border rounded-full capitalize ${LEVEL_BADGE[u.level]}`}>
                       {u.level}
