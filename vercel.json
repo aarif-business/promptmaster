@@ -3,6 +3,7 @@
   "buildCommand": "next build",
   "devCommand": "next dev",
   "installCommand": "npm install",
+  "toolbar": { "enabled": false },
   "functions": {
     "src/app/api/**": {
       "maxDuration": 30

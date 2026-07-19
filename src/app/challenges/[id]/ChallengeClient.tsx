@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { evaluatePrompt, checkLevelComplete } from '@/app/actions'
+import { evaluatePrompt, checkLevelComplete, getDailyUsage } from '@/app/actions'
 import dynamic from 'next/dynamic'
 
 const Certificate = dynamic(() => import('@/components/Certificate'), { ssr: false })
@@ -67,8 +67,19 @@ export default function ChallengeClient({ challenge, priorBest, imageUrl, refere
   const [modalOpen, setModalOpen] = useState(false)
   const [levelComplete, setLevelComplete] = useState(false)
   const [completedDifficulty, setCompletedDifficulty] = useState('')
+  const [dailyUsed, setDailyUsed] = useState(0)
+  const [dailyLimit, setDailyLimit] = useState(99)
+  const [dailyAllowed, setDailyAllowed] = useState(true)
+  const [resetsAt, setResetsAt] = useState('')
 
-  // Lock body scroll when modal is open
+  useEffect(() => {
+    getDailyUsage(challenge.id).then(({ used, limit, allowed, resetsAt }) => {
+      setDailyUsed(used)
+      setDailyLimit(limit)
+      setDailyAllowed(allowed)
+      setResetsAt(resetsAt)
+    })
+  }, [challenge.id])
   useEffect(() => {
     document.body.style.overflow = modalOpen ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
@@ -85,6 +96,12 @@ export default function ChallengeClient({ challenge, priorBest, imageUrl, refere
       challenge.min_accuracy_to_pass
     )
     setResult(res)
+    if (res.error === 'daily_limit') {
+      setDailyAllowed(false)
+    } else {
+      setDailyUsed(prev => prev + 1)
+      if (dailyUsed + 1 >= dailyLimit) setDailyAllowed(false)
+    }
     if (res.passed) {
       const { levelComplete: lc, difficulty: diff } = await checkLevelComplete(challenge.id)
       setLevelComplete(lc)
@@ -176,6 +193,22 @@ export default function ChallengeClient({ challenge, priorBest, imageUrl, refere
               Write a detailed image generation prompt that captures everything you see. Gemini AI will semantically compare your prompt to the reference — meaning matters, not keywords.
             </p>
 
+            {/* Daily limit indicator */}
+            <div className={`flex items-center justify-between mb-4 px-3 py-2 border rounded text-xs font-sans ${
+              !dailyAllowed
+                ? 'border-red-200 bg-red-50 text-red-600'
+                : 'border-fog-border bg-fog-muted text-slate/50'
+            }`}>
+              <span>Daily attempts</span>
+              <span className="font-semibold">{dailyUsed} / {dailyLimit === 99 ? '…' : dailyLimit}</span>
+            </div>
+
+            {!dailyAllowed && (
+              <div className="mb-4 px-3 py-2 border border-red-200 bg-red-50 text-xs font-sans text-red-600 rounded">
+                ⏳ You've used all attempts for today. Resets at midnight.
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <textarea
                 value={prompt}
@@ -187,7 +220,7 @@ export default function ChallengeClient({ challenge, priorBest, imageUrl, refere
               />
               <div className="flex items-center justify-between">
                 <span className="font-sans text-xs text-slate/40">{prompt.length} characters</span>
-                <button type="submit" disabled={loading || !prompt.trim()} className="btn-primary">
+                <button type="submit" disabled={loading || !prompt.trim() || !dailyAllowed} className="btn-primary">
                   {loading ? (
                     <span className="flex items-center gap-2">
                       <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
@@ -196,7 +229,7 @@ export default function ChallengeClient({ challenge, priorBest, imageUrl, refere
                       </svg>
                       Evaluating…
                     </span>
-                  ) : 'Submit Prompt'}
+                  ) : !dailyAllowed ? `Daily limit reached (${dailyUsed}/${dailyLimit})` : 'Submit Prompt'}
                 </button>
               </div>
             </form>
