@@ -84,7 +84,7 @@ export default function Header() {
             <>
               {role === 'admin' ? (
                 <>
-                  <NavLink href="/admin" current={pathname}>Scholars</NavLink>
+                  <NavLink href="/admin" current={pathname}>Admin Dashboard</NavLink>
                   <button onClick={handleSignOut} className="font-sans text-sm text-slate/50 hover:text-steel transition-colors">Sign Out</button>
                 </>
               ) : (

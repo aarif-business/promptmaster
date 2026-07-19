@@ -23,6 +23,17 @@ export async function updateSession(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Fetch role for redirect decisions
+  let role: string | null = null
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+    role = profile?.role ?? null
+  }
+
   const { pathname } = request.nextUrl
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup')
   const isProtected = pathname.startsWith('/dashboard') || pathname.startsWith('/challenges') || pathname.startsWith('/admin')
@@ -31,6 +42,15 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
   if (user && isAuthPage) {
+    const dest = role === 'admin' ? '/admin' : '/dashboard'
+    return NextResponse.redirect(new URL(dest, request.url))
+  }
+  // Prevent admin from accessing user-only pages
+  if (user && role === 'admin' && (pathname.startsWith('/dashboard') || pathname.startsWith('/challenges'))) {
+    return NextResponse.redirect(new URL('/admin', request.url))
+  }
+  // Prevent regular users from accessing admin
+  if (user && role !== 'admin' && pathname.startsWith('/admin')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
