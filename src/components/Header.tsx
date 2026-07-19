@@ -60,7 +60,7 @@ export default function Header() {
       <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
 
         {/* Logo */}
-        <Link href={user ? '/dashboard' : '/'} className="group flex flex-col leading-none shrink-0">
+        <Link href={user ? (role === 'admin' ? '/admin' : '/dashboard') : '/'} className="group flex flex-col leading-none shrink-0">
           <span className="font-serif text-xl text-steel tracking-tight group-hover:text-steel-dark transition-colors">
             PromptMaster
           </span>
@@ -82,16 +82,18 @@ export default function Header() {
         <nav className="flex items-center gap-5 shrink-0">
           {user && !isAuth ? (
             <>
-              <NavLink href="/dashboard"  current={pathname}>Dashboard</NavLink>
-              <NavLink href="/challenges" current={pathname}>Quests</NavLink>
-              {role === 'admin' && <NavLink href="/admin" current={pathname}>Admin</NavLink>}
-              <button
-                onClick={handleSignOut}
-                className="font-sans text-sm text-slate/50 hover:text-steel transition-colors"
-              >
-                Sign Out
-              </button>
-            </>
+              {role === 'admin' ? (
+                <>
+                  <NavLink href="/admin" current={pathname}>Scholars</NavLink>
+                  <button onClick={handleSignOut} className="font-sans text-sm text-slate/50 hover:text-steel transition-colors">Sign Out</button>
+                </>
+              ) : (
+                <>
+                  <NavLink href="/dashboard"  current={pathname}>Dashboard</NavLink>
+                  <NavLink href="/challenges" current={pathname}>Quests</NavLink>
+                  <button onClick={handleSignOut} className="font-sans text-sm text-slate/50 hover:text-steel transition-colors">Sign Out</button>
+                </>
+              )}
           ) : (
             <>
               <Link href="/login" className="font-sans text-sm text-slate/70 hover:text-steel transition-colors">

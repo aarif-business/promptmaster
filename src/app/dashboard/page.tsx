@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import DashboardClient from './DashboardClient'
 import { unstable_noStore as noStore } from 'next/cache'
+import { redirect } from 'next/navigation'
 
 export const metadata: Metadata = {
   title: 'Dashboard — Your Progress',
@@ -16,10 +17,12 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
+  const { data: profile } = await supabase.from('profiles').select('full_name, role, created_at').eq('id', user.id).single()
+  if (profile?.role === 'admin') redirect('/admin')
+
   const admin = createAdminClient()
 
-  const [{ data: profile }, { data: challenges }, { data: allSubmissions }, { data: recentSubmissions }] = await Promise.all([
-    supabase.from('profiles').select('full_name, role, created_at').eq('id', user.id).single(),
+  const [{ data: challenges }, { data: allSubmissions }, { data: recentSubmissions }] = await Promise.all([
     admin.from('challenges').select('id, title, description, difficulty, min_accuracy_to_pass').order('difficulty').order('created_at'),
     admin.from('submissions').select('challenge_id, accuracy_score, passed').eq('user_id', user.id),
     admin.from('submissions').select('id, challenge_id, accuracy_score, passed, submitted_at, user_prompt').eq('user_id', user.id).order('submitted_at', { ascending: false }).limit(8),
@@ -43,8 +46,6 @@ export default async function DashboardPage() {
   for (const diff of ['beginner', 'intermediate', 'advanced']) {
     passedByDiff[diff] = allChallenges.filter(c => c.difficulty === diff).some(c => bestByChallenge[c.id]?.passed)
   }
-
-  console.log('[dashboard] allSubs count:', allSubs.length, '| passedIds:', [...passedChallengeIds], '| passedByDiff:', passedByDiff)
 
   return (
     <DashboardClient
