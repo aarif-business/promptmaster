@@ -258,7 +258,44 @@ async function seedRemainingImages(challengeId: string, topic: string, total: nu
   }
 }
 
-// ── Evaluate a user's prompt ─────────────────────────────────────────────────
+// ── Check if user just completed an entire difficulty level ─────────────────
+
+export async function checkLevelComplete(
+  challengeId: string
+): Promise<{ levelComplete: boolean; difficulty: string }> {
+  const supabase = await createClient()
+  const admin = createAdminClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { levelComplete: false, difficulty: '' }
+
+  const { data: challenge } = await admin
+    .from('challenges')
+    .select('difficulty')
+    .eq('id', challengeId)
+    .single()
+
+  if (!challenge) return { levelComplete: false, difficulty: '' }
+
+  const { data: allInLevel } = await admin
+    .from('challenges')
+    .select('id')
+    .eq('difficulty', challenge.difficulty)
+
+  const ids = (allInLevel ?? []).map(c => c.id)
+
+  const { data: passed } = await admin
+    .from('submissions')
+    .select('challenge_id')
+    .eq('user_id', user.id)
+    .eq('passed', true)
+    .in('challenge_id', ids)
+
+  const passedIds = new Set((passed ?? []).map(s => s.challenge_id))
+  const levelComplete = ids.every(id => passedIds.has(id))
+
+  return { levelComplete, difficulty: challenge.difficulty }
+}
+
 
 interface EvaluateResult {
   score: number

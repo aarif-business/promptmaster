@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { evaluatePrompt } from '@/app/actions'
+import { evaluatePrompt, checkLevelComplete } from '@/app/actions'
 import dynamic from 'next/dynamic'
 
 const Certificate = dynamic(() => import('@/components/Certificate'), { ssr: false })
@@ -65,6 +65,8 @@ export default function ChallengeClient({ challenge, priorBest, imageUrl, refere
   const [loading, setLoading] = useState(false)
   const [imageLoadError, setImageLoadError] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
+  const [levelComplete, setLevelComplete] = useState(false)
+  const [completedDifficulty, setCompletedDifficulty] = useState('')
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -83,6 +85,11 @@ export default function ChallengeClient({ challenge, priorBest, imageUrl, refere
       challenge.min_accuracy_to_pass
     )
     setResult(res)
+    if (res.passed) {
+      const { levelComplete: lc, difficulty: diff } = await checkLevelComplete(challenge.id)
+      setLevelComplete(lc)
+      setCompletedDifficulty(diff)
+    }
     setLoading(false)
     setModalOpen(true)
   }
@@ -275,15 +282,16 @@ export default function ChallengeClient({ challenge, priorBest, imageUrl, refere
                 </div>
               )}
 
-              {/* Certificate on pass */}
-              {result.passed && (
+              {/* Certificate only on full level completion */}
+              {result.passed && levelComplete && (
                 <div className="border-t border-fog-border pt-5">
-                  <p className="font-sans text-xs tracking-widest uppercase text-slate/40 mb-4">Your Certificate</p>
+                  <p className="font-sans text-xs tracking-widest uppercase text-slate/40 mb-1">🎓 Level Complete!</p>
+                  <p className="font-sans text-xs text-slate/50 mb-4">You've mastered the <span className="capitalize font-semibold">{completedDifficulty}</span> realm.</p>
                   <div className="overflow-x-auto">
                     <Certificate
                       userName={userName}
-                      challengeTitle={challenge.title}
-                      difficulty={challenge.difficulty}
+                      challengeTitle={`${completedDifficulty.charAt(0).toUpperCase() + completedDifficulty.slice(1)} Realm`}
+                      difficulty={completedDifficulty}
                       score={result.score}
                     />
                   </div>
