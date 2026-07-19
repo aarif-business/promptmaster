@@ -1,5 +1,4 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
@@ -24,36 +23,17 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  let role: string | null = null
-  if (user) {
-    // Use service role to bypass RLS when fetching role
-    const adminClient = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    )
-    const { data: profile } = await adminClient
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-    role = profile?.role ?? null
-  }
-
   const { pathname } = request.nextUrl
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup')
   const isProtected = pathname.startsWith('/dashboard') || pathname.startsWith('/challenges') || pathname.startsWith('/admin')
 
+  // Not logged in trying to access protected page
   if (!user && isProtected) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
+
+  // Logged in trying to access auth pages — send to dashboard, page will redirect admin to /admin
   if (user && isAuthPage) {
-    return NextResponse.redirect(new URL(role === 'admin' ? '/admin' : '/dashboard', request.url))
-  }
-  if (user && role === 'admin' && (pathname.startsWith('/dashboard') || pathname.startsWith('/challenges'))) {
-    return NextResponse.redirect(new URL('/admin', request.url))
-  }
-  if (user && role !== 'admin' && pathname.startsWith('/admin')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
